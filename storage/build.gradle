@@ -1,0 +1,32 @@
+plugins {
+    id 'org.springframework.boot'
+}
+
+dependencies {
+//    implementation platform('org.springframework.cloud:spring-cloud-dependencies:2021.0.0')
+    implementation platform('org.springframework.boot:spring-boot-dependencies:2.6.5')
+
+    implementation 'org.springframework.boot:spring-boot-starter'
+//    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+
+    implementation 'org.rocksdb:rocksdbjni:7.0.3'
+
+
+    compileOnly 'org.projectlombok:lombok:1.18.22'
+    annotationProcessor 'org.projectlombok:lombok:1.18.22'
+    testCompileOnly 'org.projectlombok:lombok:1.18.22'
+
+    implementation "org.mapstruct:mapstruct:1.4.2.Final"
+    annotationProcessor "org.mapstruct:mapstruct-processor:1.4.2.Final"
+
+    implementation 'ch.qos.logback:logback-classic:1.2.10'
+    implementation 'ch.qos.logback:logback-core:1.2.10'
+    implementation 'io.sentry:sentry-logback:5.2.4'
+
+
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
+    testImplementation "org.testcontainers:testcontainers:1.16.3"
+    testImplementation "org.testcontainers:junit-jupiter:1.16.3"
+    testImplementation "org.testcontainers:mongodb:1.16.3"
+}

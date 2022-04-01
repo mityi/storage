@@ -1,0 +1,12 @@
+---
+version: '3.4'
+services:
+  mongo:
+    container_name: "storage"
+    image: mityi/storage:${version}
+    restart: always
+    ports:
+      - "3777:3777"
+#    environment:
+#      SENTRY_DNS: ${sentryDns}
+#      SPRINGDOC_ENABLE: ${springdocEnable}

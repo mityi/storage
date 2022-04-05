@@ -1,4 +1,4 @@
-package io.storage;
+package io.storage.rocks;
 
 import java.util.Optional;
 public interface KVRepository<K, V> {

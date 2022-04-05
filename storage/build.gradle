@@ -5,13 +5,18 @@ plugins {
 dependencies {
 //    implementation platform('org.springframework.cloud:spring-cloud-dependencies:2021.0.0')
     implementation platform('org.springframework.boot:spring-boot-dependencies:2.6.5')
+//    implementation platform('org.apache.arrow:arrow-java-root:7.0.0')
 
     implementation 'org.springframework.boot:spring-boot-starter'
 //    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+    implementation 'org.apache.arrow:arrow-vector:7.0.0'
+    implementation 'org.apache.arrow:arrow-memory-netty:7.0.0'
+    implementation 'com.squareup.okio:okio:3.0.0'
+    implementation 'it.unimi.dsi:fastutil:8.5.8'
+
 
     implementation 'org.rocksdb:rocksdbjni:7.0.3'
-
 
     compileOnly 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'

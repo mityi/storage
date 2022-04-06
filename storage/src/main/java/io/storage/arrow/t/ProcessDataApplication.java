@@ -1,20 +1,17 @@
 package io.storage.arrow.t;
 
+import io.storage.arrow.RocksDbArrowReader;
+import io.storage.rocks.KVRepository;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import lombok.extern.slf4j.Slf4j;
 import okio.ByteString;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.UInt4Vector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.complex.StructVector;
-import org.apache.arrow.vector.ipc.ArrowFileReader;
-import org.apache.arrow.vector.ipc.SeekableReadChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.StopWatch;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,33 +24,30 @@ import java.util.Map;
  * - group by city
  * - aggregate average age
  */
+@Slf4j
 public class ProcessDataApplication {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProcessDataApplication.class);
 
     /**
      * Main method: reading batches, filtering and aggregating.
      *
      * @throws IOException If reading from Arrow file fails
      */
-    private void doAnalytics() throws IOException {
+    public void doAnalytics(KVRepository<byte[], byte[]> repository) throws IOException {
         RootAllocator allocator = new RootAllocator();
 
-        try (FileInputStream fd = new FileInputStream("people.arrow")) {
-            // Setup file reader
-            ArrowFileReader fileReader = new ArrowFileReader(new SeekableReadChannel(fd.getChannel()), allocator);
-            fileReader.initialize();
-            VectorSchemaRoot schemaRoot = fileReader.getVectorSchemaRoot();
+        try (RocksDbArrowReader reader = new RocksDbArrowReader(repository, allocator)) {
+            VectorSchemaRoot schemaRoot = reader.getVectorSchemaRoot();
 
             // Aggregate: Using ByteString as it is faster than creating a String from a byte[]
             Map<ByteString, Long> perCityCount = new HashMap<>();
             Map<ByteString, Long> perCitySum = new HashMap<>();
-            processBatches(fileReader, schemaRoot, perCityCount, perCitySum);
+            processBatches(reader, schemaRoot, perCityCount, perCitySum);
 
             // Print results
             for (ByteString city : perCityCount.keySet()) {
                 double average = (double) perCitySum.get(city) / perCityCount.get(city);
-                LOGGER.info("City = {}; Average = {}", city, average);
+                log.info("City = {}; Average = {}", city, average);
             }
         }
     }
@@ -61,18 +55,18 @@ public class ProcessDataApplication {
     /**
      * Read batches, apply filters and write aggregation values into aggregation data structures
      *
-     * @param fileReader   Reads batches from Arrow file
+     * @param reader       Reads batches from Arrow file
      * @param schemaRoot   Schema root for read batches
      * @param perCityCount Aggregation of count per city
      * @param perCitySum   Aggregation of summed value per city
      * @throws IOException If reading the arrow file goes wrong
      */
-    private void processBatches(ArrowFileReader fileReader,
+    private void processBatches(RocksDbArrowReader reader,
                                 VectorSchemaRoot schemaRoot,
                                 Map<ByteString, Long> perCityCount,
                                 Map<ByteString, Long> perCitySum) throws IOException {
         // Reading the data, one batch at a time
-        while (fileReader.loadNextBatch()) {
+        while (reader.loadNextBatch()) {
             IntArrayList lastNameSelectedIndexes = filterOnLastName(schemaRoot);
             IntArrayList ageSelectedIndexes = filterOnAge(schemaRoot);
             IntArrayList streetSelectedIndexes = filterOnStreet(schemaRoot);
@@ -177,19 +171,5 @@ public class ProcessDataApplication {
 
         intersection.trim();
         return intersection;
-    }
-
-
-    //========================================================================
-    // Starting computation
-
-    public static void main(String[] args) throws Exception {
-        ProcessDataApplication app = new ProcessDataApplication();
-
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        app.doAnalytics();
-        stopWatch.stop();
-        LOGGER.info("Timing: {}", stopWatch);
     }
 }

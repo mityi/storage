@@ -1,21 +1,17 @@
 package io.storage.arrow.t;
 
+import io.storage.rocks.KVRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.UInt4Vector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.StopWatch;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+@Slf4j
 public class GenerateRandomDataApplication {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GenerateRandomDataApplication.class);
-    private static final int CHUNK_SIZE = 20_000;
 
     /**
      * Generates an array of random people.
@@ -23,7 +19,7 @@ public class GenerateRandomDataApplication {
      * @param numberOfPeople How many people to generate
      * @return Array of random people
      */
-    Person[] randomPeople(int numberOfPeople) {
+    public Person[] randomPeople(int numberOfPeople) {
         Person[] people = new Person[numberOfPeople];
 
         for (int i = 0; i < numberOfPeople; i++) {
@@ -40,12 +36,16 @@ public class GenerateRandomDataApplication {
      * Writing in chunks has the advantage that only CHUNK_SIZE vectorized Person objects are pulled into memory
      * when reading the file from disk.
      *
-     * @param people People to write to disk
+     * @param people     People to write to disk
+     * @param repository
      * @throws IOException Thrown if something goes wrong while writing to file 'people.arrow'.
      */
-    void writeToArrowFile(Person[] people) throws IOException {
-        new ChunkedWriter<>(CHUNK_SIZE, this::vectorizePerson)
-                .write(new File("people.arrow"), people, ArrowSchemas.personSchema());
+    public void writeToArrowFile(Person[] people, KVRepository<byte[], byte[]> repository) throws IOException {
+//        new ChunkedWriter<>(CHUNK_SIZE, this::vectorizePerson)
+//                .write(new File("people.arrow"), people, ArrowSchemas.personSchema());
+        new ChunkedWriter<>(repository, this::vectorizePerson)
+                .write(people, ArrowSchemas.personSchema());
+
     }
 
     /**
@@ -71,21 +71,4 @@ public class GenerateRandomDataApplication {
         ((UInt4Vector) childrenFromFields.get(3)).setSafe(index, address.getPostalCode());
     }
 
-    //========================================================================
-    // Starting computation
-    public static void main(String[] args) throws Exception {
-        GenerateRandomDataApplication app = new GenerateRandomDataApplication();
-
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        int numberOfPeople = 10_047_031;
-        LOGGER.info("Generating {} people", numberOfPeople);
-        Person[] people = app.randomPeople(numberOfPeople);
-        stopWatch.stop();
-        stopWatch.start();
-        LOGGER.info("Initiating writing");
-        app.writeToArrowFile(people);
-        stopWatch.stop();
-        LOGGER.info("Timing: {}", stopWatch);
-    }
 }

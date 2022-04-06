@@ -12,15 +12,15 @@ import java.util.Optional;
 @Slf4j
 @Repository
 @AllArgsConstructor
-public class RocksDBRepository implements KVRepository<String, Object> {
+public class RocksDBRepository implements KVRepository<byte[], byte[]> {
     private final RocksDB db;
     //todo use locs instead synchronized
 
     @Override
-    public synchronized boolean save(String key, Object value) {
-        log.info("saving value '{}' with key '{}'", value, key);
+    public synchronized boolean save(byte[] key, byte[] value) {
+        log.debug("saving value '{}' with key '{}'", value, key);
         try {
-            db.put(key.getBytes(), SerializationUtils.serialize(value));
+            db.put(key, value);
         } catch (RocksDBException e) {
             log.error("Error saving entry. Cause: '{}', message: '{}'", e.getCause(), e.getMessage());
             return false;
@@ -29,12 +29,12 @@ public class RocksDBRepository implements KVRepository<String, Object> {
     }
 
     @Override
-    public synchronized Optional<Object> find(String key) {
-        Object value = null;
+    public synchronized Optional<byte[]> find(byte[] key) {
+        byte[] value = null;
         try {
-            byte[] bytes = db.get(key.getBytes());
+            byte[] bytes = db.get(key);
             if (bytes != null) {
-                value = SerializationUtils.deserialize(bytes);
+                value = bytes;
             }
         } catch (RocksDBException e) {
             log.error(
@@ -44,15 +44,15 @@ public class RocksDBRepository implements KVRepository<String, Object> {
                     e.getMessage()
             );
         }
-        log.info("finding key '{}' returns '{}'", key, value);
+        log.debug("finding key '{}' returns '{}'", key, value);
         return value != null ? Optional.of(value) : Optional.empty();
     }
 
     @Override
-    public synchronized boolean delete(String key) {
-        log.info("deleting key '{}'", key);
+    public synchronized boolean delete(byte[] key) {
+        log.debug("deleting key '{}'", key);
         try {
-            db.delete(key.getBytes());
+            db.delete(key);
         } catch (RocksDBException e) {
             log.error("Error deleting entry, cause: '{}', message: '{}'", e.getCause(), e.getMessage());
             return false;

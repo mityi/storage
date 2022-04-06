@@ -1,15 +1,14 @@
 package io.storage.arrow.t;
 
+import io.storage.arrow.RocksDbArrowWriter;
+import io.storage.rocks.KVRepository;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.dictionary.DictionaryProvider;
-import org.apache.arrow.vector.ipc.ArrowFileWriter;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 
@@ -17,21 +16,21 @@ public class ChunkedWriter<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChunkedWriter.class);
 
-    private final int chunkSize;
+    private final KVRepository<byte[], byte[]> repository;
     private final Vectorizer<T> vectorizer;
 
-    public ChunkedWriter(int chunkSize, Vectorizer<T> vectorizer) {
-        this.chunkSize = chunkSize;
+
+    public ChunkedWriter(KVRepository<byte[], byte[]> repository, Vectorizer<T> vectorizer) {
+        this.repository = repository;
         this.vectorizer = vectorizer;
     }
 
-    public void write(File file, T[] values, Schema schema) throws IOException {
+    public void write(T[] values, Schema schema) throws IOException {
         DictionaryProvider.MapDictionaryProvider dictProvider = new DictionaryProvider.MapDictionaryProvider();
-
         try (RootAllocator allocator = new RootAllocator();
              VectorSchemaRoot schemaRoot = VectorSchemaRoot.create(schema, allocator);
-             FileOutputStream fd = new FileOutputStream(file);
-             ArrowFileWriter fileWriter = new ArrowFileWriter(schemaRoot, dictProvider, fd.getChannel())) {
+             //todo
+             RocksDbArrowWriter fileWriter = new RocksDbArrowWriter(repository, schemaRoot, dictProvider)) {
 
             LOGGER.info("Start writing");
             fileWriter.start();
@@ -39,17 +38,18 @@ public class ChunkedWriter<T> {
             int index = 0;
             while (index < values.length) {
                 schemaRoot.allocateNew();
-                int chunkIndex = 0;
-                while (chunkIndex < chunkSize && index + chunkIndex < values.length) {
-                    vectorizer.vectorize(values[index + chunkIndex], chunkIndex, schemaRoot);
-                    chunkIndex++;
-                }
-                schemaRoot.setRowCount(chunkIndex);
-                LOGGER.info("Filled chunk with {} items; {} items written", chunkIndex, index + chunkIndex);
+
+                final int firstArrayElement = 0; //
+                vectorizer.vectorize(values[index], firstArrayElement, schemaRoot);
+
+                final int lengthArrayElement = 1; //
+                schemaRoot.setRowCount(lengthArrayElement);
+
+                LOGGER.info("Filled with item; {} item written", index);
                 fileWriter.writeBatch();
                 LOGGER.info("Chunk written");
 
-                index += chunkIndex;
+                index++;
                 schemaRoot.clear();
             }
 

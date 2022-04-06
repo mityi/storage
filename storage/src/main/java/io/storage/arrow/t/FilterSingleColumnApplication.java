@@ -1,19 +1,17 @@
 package io.storage.arrow.t;
 
+import io.storage.arrow.RocksDbArrowReader;
+import io.storage.rocks.KVRepository;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import lombok.extern.slf4j.Slf4j;
 import okio.ByteString;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.UInt4Vector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.complex.StructVector;
-import org.apache.arrow.vector.ipc.ArrowFileReader;
-import org.apache.arrow.vector.ipc.SeekableReadChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.StopWatch;
+import org.apache.arrow.vector.ipc.ArrowStreamReader;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
@@ -24,52 +22,49 @@ import java.util.TreeMap;
  * - group by city
  * - aggregate average age
  */
+@Slf4j
 public class FilterSingleColumnApplication {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FilterSingleColumnApplication.class);
 
     /**
      * Main method: reading batches, filtering and aggregating.
      *
      * @throws IOException If reading from Arrow file fails
      */
-    private void doAnalytics() throws IOException {
+    public void doAnalytics(KVRepository<byte[], byte[]> repository) throws IOException {
         RootAllocator allocator = new RootAllocator();
 
-        try (FileInputStream fd = new FileInputStream("people.arrow")) {
-            // Setup file reader
-            ArrowFileReader fileReader = new ArrowFileReader(new SeekableReadChannel(fd.getChannel()), allocator);
-            fileReader.initialize();
-            VectorSchemaRoot schemaRoot = fileReader.getVectorSchemaRoot();
+        try (RocksDbArrowReader reader = new RocksDbArrowReader(repository, allocator)) {
+            VectorSchemaRoot schemaRoot = reader.getVectorSchemaRoot();
 
             // Aggregate: Using ByteString as it is faster than creating a String from a byte[]
             Map<ByteString, Long> perCityCount = new TreeMap<>();
             Map<ByteString, Long> perCitySum = new TreeMap<>();
-            processBatches(fileReader, schemaRoot, perCityCount, perCitySum);
+            processBatches(reader, schemaRoot, perCityCount, perCitySum);
 
             // Print results
             for (ByteString city : perCityCount.keySet()) {
                 double average = (double) perCitySum.get(city) / perCityCount.get(city);
-                LOGGER.info("City = {}; Average = {}", city, average);
+                log.info("City = {}; Average = {}", city, average);
             }
         }
+
     }
 
     /**
      * Read batches, apply filters and write aggregation values into aggregation data structures
      *
-     * @param fileReader   Reads batches from Arrow file
+     * @param reader       Reads batches from Arrow file
      * @param schemaRoot   Schema root for read batches
      * @param perCityCount Aggregation of count per city
      * @param perCitySum   Aggregation of summed value per city
      * @throws IOException If reading the arrow file goes wrong
      */
-    private void processBatches(ArrowFileReader fileReader,
-                                VectorSchemaRoot schemaRoot,
-                                Map<ByteString, Long> perCityCount,
-                                Map<ByteString, Long> perCitySum) throws IOException {
+    private void processBatches(ArrowStreamReader reader, VectorSchemaRoot schemaRoot,
+                                Map<ByteString, Long> perCityCount, Map<ByteString, Long> perCitySum)
+            throws IOException {
         // Reading the data, one batch at a time
-        while (fileReader.loadNextBatch()) {
+        while (reader.loadNextBatch()) {
             int[] selectedIndexes = filterOnStreet(schemaRoot).elements();
 
             aggregate(schemaRoot, selectedIndexes, perCityCount, perCitySum);
@@ -84,9 +79,7 @@ public class FilterSingleColumnApplication {
      * @param perCityCount    Aggregating counts per city
      * @param perCitySum      Aggregating sums per city
      */
-    private void aggregate(VectorSchemaRoot schemaRoot,
-                           int[] selectedIndexes,
-                           Map<ByteString, Long> perCityCount,
+    private void aggregate(VectorSchemaRoot schemaRoot, int[] selectedIndexes, Map<ByteString, Long> perCityCount,
                            Map<ByteString, Long> perCitySum) {
         VarCharVector cityVector = (VarCharVector) ((StructVector) schemaRoot.getVector("address")).getChild("city");
         UInt4Vector ageDataVector = (UInt4Vector) schemaRoot.getVector("age");
@@ -114,15 +107,4 @@ public class FilterSingleColumnApplication {
         return streetSelectedIndexes;
     }
 
-    //========================================================================
-    // Starting computation
-    public static void main(String[] args) throws Exception {
-        FilterSingleColumnApplication app = new FilterSingleColumnApplication();
-
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        app.doAnalytics();
-        stopWatch.stop();
-        LOGGER.info("Timing: {}", stopWatch);
-    }
 }

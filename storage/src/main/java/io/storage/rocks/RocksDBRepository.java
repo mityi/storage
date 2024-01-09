@@ -1,19 +1,14 @@
 package io.storage.rocks;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
-import org.springframework.stereotype.Repository;
-import org.springframework.util.SerializationUtils;
 
 import java.util.Optional;
 
 @Slf4j
-@Repository
-@AllArgsConstructor
 public class RocksDBRepository implements KVRepository<byte[], byte[]> {
-    private final RocksDB db;
+    private final RocksDB db = new RocksDBConfigurations().rocksDB();
     //todo use locs instead synchronized
 
     @Override

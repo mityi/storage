@@ -4,23 +4,30 @@ plugins {
 
 dependencies {
 //    implementation platform('org.springframework.cloud:spring-cloud-dependencies:2021.0.0')
-    implementation platform('org.springframework.boot:spring-boot-dependencies:2.6.5')
+    implementation platform('org.springframework.boot:spring-boot-dependencies:3.2.1')
 //    implementation platform('org.apache.arrow:arrow-java-root:7.0.0')
 
     implementation 'org.springframework.boot:spring-boot-starter'
 //    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-    implementation 'org.apache.arrow:arrow-vector:7.0.0'
-    implementation 'org.apache.arrow:arrow-memory-netty:7.0.0'
-    implementation 'com.squareup.okio:okio:3.0.0'
-    implementation 'it.unimi.dsi:fastutil:8.5.8'
+    implementation 'org.apache.arrow:arrow-vector:14.0.2'
+    // what the difference https://mvnrepository.com/artifact/org.apache.arrow/arrow-memory-unsafe/14.0.2
+//    implementation 'org.apache.arrow:arrow-memory-core:14.0.2'
+    implementation 'org.apache.arrow:arrow-memory-netty:14.0.2'
+//    implementation 'org.apache.arrow:arrow-algorithm:11.0.0'
+//    implementation 'org.apache.arrow:arrow-dataset:11.0.0'
+//    implementation 'org.apache.arrow:arrow-tools:11.0.0'
 
 
-    implementation 'org.rocksdb:rocksdbjni:7.0.3'
+    implementation 'com.squareup.okio:okio:3.7.0'
+    implementation 'it.unimi.dsi:fastutil:8.5.12'
 
-    compileOnly 'org.projectlombok:lombok:1.18.22'
-    annotationProcessor 'org.projectlombok:lombok:1.18.22'
-    testCompileOnly 'org.projectlombok:lombok:1.18.22'
+
+    implementation 'org.rocksdb:rocksdbjni:8.9.1'
+
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    testCompileOnly 'org.projectlombok:lombok:1.18.30'
 
     implementation "org.mapstruct:mapstruct:1.4.2.Final"
     annotationProcessor "org.mapstruct:mapstruct-processor:1.4.2.Final"
@@ -29,9 +36,4 @@ dependencies {
     implementation 'ch.qos.logback:logback-core:1.2.10'
     implementation 'io.sentry:sentry-logback:5.2.4'
 
-
-    testImplementation "org.springframework.boot:spring-boot-starter-test"
-    testImplementation "org.testcontainers:testcontainers:1.16.3"
-    testImplementation "org.testcontainers:junit-jupiter:1.16.3"
-    testImplementation "org.testcontainers:mongodb:1.16.3"
 }

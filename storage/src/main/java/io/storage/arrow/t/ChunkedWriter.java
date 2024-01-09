@@ -2,19 +2,18 @@ package io.storage.arrow.t;
 
 import io.storage.arrow.RocksDbArrowWriter;
 import io.storage.rocks.KVRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.dictionary.DictionaryProvider;
 import org.apache.arrow.vector.types.pojo.Schema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-
+@Slf4j
 public class ChunkedWriter<T> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ChunkedWriter.class);
+    private static final int chunkSize = 20_000;
 
     private final KVRepository<byte[], byte[]> repository;
     private final Vectorizer<T> vectorizer;
@@ -32,28 +31,27 @@ public class ChunkedWriter<T> {
              //todo
              RocksDbArrowWriter fileWriter = new RocksDbArrowWriter(repository, schemaRoot, dictProvider)) {
 
-            LOGGER.info("Start writing");
+            log.debug("Start writing");
             fileWriter.start();
 
             int index = 0;
             while (index < values.length) {
                 schemaRoot.allocateNew();
-
-                final int firstArrayElement = 0; //
-                vectorizer.vectorize(values[index], firstArrayElement, schemaRoot);
-
-                final int lengthArrayElement = 1; //
-                schemaRoot.setRowCount(lengthArrayElement);
-
-                LOGGER.info("Filled with item; {} item written", index);
+                int chunkIndex = 0;
+                while (chunkIndex < chunkSize && index + chunkIndex < values.length) {
+                    vectorizer.vectorize(values[index + chunkIndex], chunkIndex, schemaRoot);
+                    chunkIndex++;
+                }
+                schemaRoot.setRowCount(chunkIndex);
+                log.debug("Filled chunk with {} items; {} items written", chunkIndex, index + chunkIndex);
                 fileWriter.writeBatch();
-                LOGGER.info("Chunk written");
+                log.debug("Chunk written");
 
-                index++;
+                index += chunkIndex;
                 schemaRoot.clear();
             }
 
-            LOGGER.info("Writing done");
+            log.debug("Writing done");
             fileWriter.end();
         }
     }

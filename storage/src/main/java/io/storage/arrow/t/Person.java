@@ -12,7 +12,7 @@ public class Person {
     private final int age;
     private final Address address;
 
-    static Person randomPerson() {
+    public static Person randomPerson() {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         return new Person(
                 Util.pickRandom(FIRST_NAMES),

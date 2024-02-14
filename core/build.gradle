@@ -1,0 +1,23 @@
+plugins {
+    id 'org.springframework.boot'
+}
+
+dependencies {
+//    implementation platform('org.springframework.boot:spring-boot-dependencies:3.2.2')
+    implementation platform('org.apache.arrow:arrow-java-root:15.0.0')
+
+//    implementation 'org.springframework.boot:spring-boot-starter'
+
+    implementation 'org.apache.arrow:arrow-vector'
+    implementation 'org.apache.arrow:arrow-memory-netty'
+
+    implementation 'org.rocksdb:rocksdbjni:8.9.1'
+
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    testCompileOnly 'org.projectlombok:lombok:1.18.30'
+
+    implementation 'ch.qos.logback:logback-classic:1.4.12'
+    implementation 'ch.qos.logback:logback-core:1.4.12'
+
+}

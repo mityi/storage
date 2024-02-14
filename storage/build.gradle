@@ -3,17 +3,15 @@ plugins {
 }
 
 dependencies {
-//    implementation platform('org.springframework.cloud:spring-cloud-dependencies:2021.0.0')
-    implementation platform('org.springframework.boot:spring-boot-dependencies:3.2.1')
-//    implementation platform('org.apache.arrow:arrow-java-root:7.0.0')
+    implementation platform('org.springframework.boot:spring-boot-dependencies:3.2.2')
+    implementation platform('org.apache.arrow:arrow-java-root:15.0.0')
 
     implementation 'org.springframework.boot:spring-boot-starter'
-//    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-    implementation 'org.apache.arrow:arrow-vector:14.0.2'
+    implementation 'org.apache.arrow:arrow-vector'
     // what the difference https://mvnrepository.com/artifact/org.apache.arrow/arrow-memory-unsafe/14.0.2
 //    implementation 'org.apache.arrow:arrow-memory-core:14.0.2'
-    implementation 'org.apache.arrow:arrow-memory-netty:14.0.2'
+    implementation 'org.apache.arrow:arrow-memory-netty'
 //    implementation 'org.apache.arrow:arrow-algorithm:11.0.0'
 //    implementation 'org.apache.arrow:arrow-dataset:11.0.0'
 //    implementation 'org.apache.arrow:arrow-tools:11.0.0'
@@ -32,8 +30,8 @@ dependencies {
     implementation "org.mapstruct:mapstruct:1.4.2.Final"
     annotationProcessor "org.mapstruct:mapstruct-processor:1.4.2.Final"
 
-    implementation 'ch.qos.logback:logback-classic:1.2.10'
-    implementation 'ch.qos.logback:logback-core:1.2.10'
-    implementation 'io.sentry:sentry-logback:5.2.4'
+    implementation 'ch.qos.logback:logback-classic:1.4.12'
+    implementation 'ch.qos.logback:logback-core:1.4.12'
+//    implementation 'io.sentry:sentry-logback:5.2.4'
 
 }
